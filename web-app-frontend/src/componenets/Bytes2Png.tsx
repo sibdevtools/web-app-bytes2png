@@ -75,7 +75,7 @@ export const Bytes2Png = () => {
 
   return (
     <Container className="mt-5">
-      <p className={'h2 mb-4'}>Base64 - PNG Converter</p>
+      <p className={'h2 mb-4'}>Bytes &lt;-&gt; PNG Converter</p>
       {errorMessage && (
         <Row>
           <Row className="mt-3">
