@@ -6,6 +6,8 @@ import com.github.sibdevtools.localization.mutable.api.source.LocalizationJsonSo
 import com.github.sibdevtools.webapp.api.dto.HealthStatus;
 import com.github.sibdevtools.webapp.api.dto.WebApplication;
 import jakarta.annotation.Nonnull;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Set;
@@ -16,6 +18,7 @@ import static com.github.sibdevtools.web.app.bytes2png.constant.Constants.SYSTEM
  * @author sibmaks
  * @since 0.0.1
  */
+@Getter
 @Component
 @LocalizationJsonSource(
         systemCode = SYSTEM_CODE,
@@ -29,6 +32,9 @@ import static com.github.sibdevtools.web.app.bytes2png.constant.Constants.SYSTEM
 )
 public class WebAppBytes2Png implements WebApplication {
     private static final LocalizationSourceId LOCALIZATION_SOURCE_ID = new LocalizationSourceId(SYSTEM_CODE);
+
+    @Value("${web.app.bytes2png.version}")
+    private String version;
 
     @Nonnull
     @Override

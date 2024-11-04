@@ -127,6 +127,7 @@ export const Bytes2Png = () => {
                 <FormControl
                   id={'widthInput'}
                   type={'number'}
+                  min={1}
                   onChange={e => setWidth(+e.target.value)} />
                 <FormText>
                   Optional value. If empty calculated for height or make square
@@ -141,6 +142,7 @@ export const Bytes2Png = () => {
                 <FormControl
                   id={'heightInput'}
                   type={'number'}
+                  min={1}
                   onChange={e => setHeight(+e.target.value)} />
                 <FormText>
                   Optional value. If empty calculated for width or make square
