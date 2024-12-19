@@ -44,26 +44,26 @@ export const Bytes2Png = () => {
     });
   };
 
-  const handleDownload = async () => {
-    if (mode == Mode.ENCODE) {
-      const rqWidth = width === 0 ? null : width
-      const rqHeight = height === 0 ? null : height
-      const rs = await encode({
-        width: rqWidth,
-        height: rqHeight,
-        content: base64,
-        useGZIP: useGZIP
-      })
-      if (rs.data.success) {
-        const result = rs.data.body;
-        base64ToFile(result, filename);
-        setErrorMessage('');
-      } else {
-        console.error(`Failed to process: ${rs.status}`);
-        setErrorMessage(`Failed to process: ${rs.status}`);
-      }
-      return;
+  const doEncode = async () => {
+    const rqWidth = width === 0 ? null : width
+    const rqHeight = height === 0 ? null : height
+    const rs = await encode({
+      width: rqWidth,
+      height: rqHeight,
+      content: base64,
+      useGZIP: useGZIP
+    })
+    if (rs.data.success) {
+      const result = rs.data.body;
+      base64ToFile(result, filename);
+      setErrorMessage('');
+    } else {
+      console.error(`Failed to process: ${rs.status}`);
+      setErrorMessage(`Failed to process: ${rs.status}`);
     }
+  };
+
+  const doDecode = async () => {
     const rs = await decode({ content: base64, useGZIP })
     if (rs.data.success) {
       const result = rs.data.body;
@@ -72,6 +72,19 @@ export const Bytes2Png = () => {
     } else {
       console.error(`Failed to process: ${rs.status}`);
       setErrorMessage(`Failed to process: ${rs.status}`);
+    }
+  };
+
+  const handleDownload = async () => {
+    try {
+      if (mode == Mode.ENCODE) {
+        await doEncode()
+        return;
+      }
+      await doDecode()
+    } catch (e) {
+      console.error(`Failed to process: ${e}`, e);
+      setErrorMessage(`Failed to process: ${e}`);
     }
   };
 
