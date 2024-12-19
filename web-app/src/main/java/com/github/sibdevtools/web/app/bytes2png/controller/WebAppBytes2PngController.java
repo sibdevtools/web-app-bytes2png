@@ -60,10 +60,13 @@ public class WebAppBytes2PngController {
                 rq.content()
         );
 
+        var useGzipObject = rq.useGZIP();
+        var useGzip = useGzipObject == null || useGzipObject;
         var bufferedImage = service.encode(
                 rq.width(),
                 rq.height(),
-                decoded
+                decoded,
+                useGzip
         );
 
         var byteOutputStream = new ByteArrayOutputStream();
@@ -92,8 +95,10 @@ public class WebAppBytes2PngController {
         var decoded = decoder.decode(
                 rq.content()
         );
+        var useGzipObject = rq.useGZIP();
+        var useGzip = useGzipObject == null || useGzipObject;
 
-        var bytes = service.decode(decoded);
+        var bytes = service.decode(decoded, useGzip);
         var rs = encoder.encodeToString(bytes);
         return new StandardBodyRs<>(rs);
     }

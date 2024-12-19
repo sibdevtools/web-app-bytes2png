@@ -11,6 +11,7 @@ export interface EncodeRq {
   width: number | null;
   height: number | null;
   content: string;
+  useGZIP: boolean;
 }
 
 export interface ServiceRs {
@@ -23,6 +24,7 @@ export const encode = (rq: EncodeRq) => service.post<ServiceRs>('/v1/encode', rq
 
 export interface DecodeRq {
   content: string;
+  useGZIP: boolean;
 }
 
 // BYTES2PNG encode

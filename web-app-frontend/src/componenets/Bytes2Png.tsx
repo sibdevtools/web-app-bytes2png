@@ -4,7 +4,7 @@ import {
   Alert,
   Button,
   Col,
-  Container,
+  Container, FormCheck,
   FormControl,
   FormLabel,
   FormSelect,
@@ -24,6 +24,7 @@ export const Bytes2Png = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [width, setWidth] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
+  const [useGZIP, setUseGZIP] = useState(true);
   const [base64, setBase64] = useState('');
   const [mode, setMode] = useState<Mode>(Mode.ENCODE);
   const [filename, setFilename] = useState('download.txt');
@@ -50,7 +51,8 @@ export const Bytes2Png = () => {
       const rs = await encode({
         width: rqWidth,
         height: rqHeight,
-        content: base64
+        content: base64,
+        useGZIP: useGZIP
       })
       if (rs.data.success) {
         const result = rs.data.body;
@@ -62,7 +64,7 @@ export const Bytes2Png = () => {
       }
       return;
     }
-    const rs = await decode({ content: base64 })
+    const rs = await decode({ content: base64, useGZIP })
     if (rs.data.success) {
       const result = rs.data.body;
       base64ToFile(result, filename);
@@ -114,6 +116,18 @@ export const Bytes2Png = () => {
               )
             }
           </FormSelect>
+        </Col>
+      </Row>
+      <Row className="mb-3">
+        <Col md={1}>
+          <FormLabel htmlFor="useGZIPInput">Use GZIP</FormLabel>
+        </Col>
+        <Col md={11}>
+          <FormCheck
+            id={'useGZIPInput'}
+            type={'switch'}
+            checked={useGZIP}
+            onChange={e => setUseGZIP(e.target.checked)} />
         </Col>
       </Row>
       {
