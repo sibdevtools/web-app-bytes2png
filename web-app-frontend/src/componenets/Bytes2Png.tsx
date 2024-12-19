@@ -10,7 +10,8 @@ import {
   FormSelect,
   FormText,
   InputGroup,
-  Row
+  Row,
+  Spinner
 } from 'react-bootstrap';
 import { Download04Icon } from 'hugeicons-react';
 import { decode, encode } from '../api/service';
@@ -28,10 +29,11 @@ export const Bytes2Png = () => {
   const [base64, setBase64] = useState('');
   const [mode, setMode] = useState<Mode>(Mode.ENCODE);
   const [filename, setFilename] = useState('download.txt');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
-      handleConvert(event?.target?.files[0])
+      handleConvert(event?.target?.files[0]);
     }
   };
 
@@ -45,14 +47,14 @@ export const Bytes2Png = () => {
   };
 
   const doEncode = async () => {
-    const rqWidth = width === 0 ? null : width
-    const rqHeight = height === 0 ? null : height
+    const rqWidth = width === 0 ? null : width;
+    const rqHeight = height === 0 ? null : height;
     const rs = await encode({
       width: rqWidth,
       height: rqHeight,
       content: base64,
       useGZIP: useGZIP
-    })
+    });
     if (rs.data.success) {
       const result = rs.data.body;
       base64ToFile(result, filename);
@@ -64,7 +66,7 @@ export const Bytes2Png = () => {
   };
 
   const doDecode = async () => {
-    const rs = await decode({ content: base64, useGZIP })
+    const rs = await decode({ content: base64, useGZIP });
     if (rs.data.success) {
       const result = rs.data.body;
       base64ToFile(result, filename);
@@ -76,15 +78,18 @@ export const Bytes2Png = () => {
   };
 
   const handleDownload = async () => {
+    setIsLoading(true);
     try {
-      if (mode == Mode.ENCODE) {
-        await doEncode()
-        return;
+      if (mode === Mode.ENCODE) {
+        await doEncode();
+      } else {
+        await doDecode();
       }
-      await doDecode()
     } catch (e) {
       console.error(`Failed to process: ${e}`, e);
       setErrorMessage(`Failed to process: ${e}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -110,7 +115,9 @@ export const Bytes2Png = () => {
           <FormControl
             id={'fileInput'}
             type="file"
-            onChange={handleFileChange} />
+            onChange={handleFileChange}
+            disabled={isLoading}
+          />
         </Col>
       </Row>
       <Row className="mb-3">
@@ -121,13 +128,12 @@ export const Bytes2Png = () => {
           <FormSelect
             id="modeSelect"
             value={mode}
-            onChange={e => setMode(e.target.value as Mode)}>
-            {
-              Object.values(Mode).map(key => (
-                  <option key={key} value={key}>{key}</option>
-                )
-              )
-            }
+            onChange={e => setMode(e.target.value as Mode)}
+            disabled={isLoading}
+          >
+            {Object.values(Mode).map(key => (
+              <option key={key} value={key}>{key}</option>
+            ))}
           </FormSelect>
         </Col>
       </Row>
@@ -140,44 +146,49 @@ export const Bytes2Png = () => {
             id={'useGZIPInput'}
             type={'switch'}
             checked={useGZIP}
-            onChange={e => setUseGZIP(e.target.checked)} />
+            onChange={e => setUseGZIP(e.target.checked)}
+            disabled={isLoading}
+          />
         </Col>
       </Row>
-      {
-        mode === Mode.ENCODE && (
-          <>
-            <Row className="mb-3">
-              <Col md={1}>
-                <FormLabel htmlFor="widthInput">Width</FormLabel>
-              </Col>
-              <Col md={11}>
-                <FormControl
-                  id={'widthInput'}
-                  type={'number'}
-                  min={1}
-                  onChange={e => setWidth(+e.target.value)} />
-                <FormText>
-                  Optional value. If empty calculated for height or make square
-                </FormText>
-              </Col>
-            </Row>
-            <Row className="mb-3">
-              <Col md={1}>
-                <FormLabel htmlFor="heightInput">Height</FormLabel>
-              </Col>
-              <Col md={11}>
-                <FormControl
-                  id={'heightInput'}
-                  type={'number'}
-                  min={1}
-                  onChange={e => setHeight(+e.target.value)} />
-                <FormText>
-                  Optional value. If empty calculated for width or make square
-                </FormText>
-              </Col>
-            </Row>
-          </>
-        )}
+      {mode === Mode.ENCODE && (
+        <>
+          <Row className="mb-3">
+            <Col md={1}>
+              <FormLabel htmlFor="widthInput">Width</FormLabel>
+            </Col>
+            <Col md={11}>
+              <FormControl
+                id={'widthInput'}
+                type={'number'}
+                min={1}
+                onChange={e => setWidth(+e.target.value)}
+                disabled={isLoading}
+              />
+              <FormText>
+                Optional value. If empty calculated for height or make square
+              </FormText>
+            </Col>
+          </Row>
+          <Row className="mb-3">
+            <Col md={1}>
+              <FormLabel htmlFor="heightInput">Height</FormLabel>
+            </Col>
+            <Col md={11}>
+              <FormControl
+                id={'heightInput'}
+                type={'number'}
+                min={1}
+                onChange={e => setHeight(+e.target.value)}
+                disabled={isLoading}
+              />
+              <FormText>
+                Optional value. If empty calculated for width or make square
+              </FormText>
+            </Col>
+          </Row>
+        </>
+      )}
       <Row className="mb-3">
         <Col md={1}>
           <FormLabel htmlFor="fileNameInput">Filename</FormLabel>
@@ -189,11 +200,15 @@ export const Bytes2Png = () => {
               type="text"
               value={filename}
               placeholder="Filename"
-              onChange={(e) => setFilename(e.target.value)} />
+              onChange={(e) => setFilename(e.target.value)}
+              disabled={isLoading}
+            />
             <Button
               variant="primary"
-              onClick={handleDownload}>
-              <Download04Icon />
+              onClick={handleDownload}
+              disabled={isLoading}
+            >
+              {isLoading ? <Spinner animation="border" size="sm" /> : <Download04Icon />}
             </Button>
           </InputGroup>
         </Col>
