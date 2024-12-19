@@ -10,6 +10,7 @@ package com.github.sibdevtools.web.app.bytes2png.api;
 public record EncodeRq(
         Integer width,
         Integer height,
-        String content
+        String content,
+        Boolean useGZIP
 ) {
 }

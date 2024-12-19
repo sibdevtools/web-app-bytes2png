@@ -16,13 +16,14 @@ public class WebAppBytes2PngService {
     /**
      * Convert bytes to png image
      *
-     * @param width  excepted width of image
-     * @param height excepted height of image
-     * @param bytes  bytes to convert
+     * @param width   excepted width of image
+     * @param height  excepted height of image
+     * @param bytes   bytes to convert
+     * @param useGZIP use gzip compression
      * @return resulted image
      */
-    public BufferedImage encode(Integer width, Integer height, byte[] bytes) {
-        var buffer = serialize(bytes);
+    public BufferedImage encode(Integer width, Integer height, byte[] bytes, boolean useGZIP) {
+        var buffer = useGZIP ? serializeGZIP(bytes) : serialize(bytes);
         var bufferSize = buffer.length;
         var pixels = bufferSize / 3.;
 
@@ -64,25 +65,48 @@ public class WebAppBytes2PngService {
         return image;
     }
 
-    private static byte[] serialize(byte[] bytes) {
+    private static byte[] serializeGZIP(byte[] bytes) {
         var byteArrayOutputStream = new ByteArrayOutputStream();
-        try (var gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream);
-             var objectOutputStream = new ObjectOutputStream(gzipOutputStream)) {
-            objectOutputStream.writeInt(bytes.length);
-            objectOutputStream.write(bytes);
+        try (var gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
+            gzipOutputStream.write(intToBytes(bytes.length));
+            gzipOutputStream.write(bytes);
         } catch (IOException e) {
             throw new UnexpectedErrorException("Can't serialize image", e);
         }
         return byteArrayOutputStream.toByteArray();
     }
 
+    private static byte[] intToBytes(int value) {
+        return new byte[]{
+                (byte) (value >> 24),
+                (byte) (value >> 16),
+                (byte) (value >> 8),
+                (byte) value
+        };
+    }
+
+    private static byte[] serialize(byte[] bytes) {
+        var buffer = new byte[bytes.length + 4];
+        writeIntToBuffer(buffer, bytes.length);
+        System.arraycopy(bytes, 0, buffer, 4, bytes.length);
+        return buffer;
+    }
+
+    private static void writeIntToBuffer(byte[] buffer, int value) {
+        buffer[0] = (byte) (value >> 24);
+        buffer[1] = (byte) (value >> 16);
+        buffer[2] = (byte) (value >> 8);
+        buffer[3] = (byte) (value);
+    }
+
     /**
      * Decode PNG image to bytes
      *
      * @param pngBytes PNG bytes
+     * @param useGZIP  use gzip decompression
      * @return decoded bytes
      */
-    public byte[] decode(byte[] pngBytes) {
+    public byte[] decode(byte[] pngBytes, boolean useGZIP) {
         var byteArrayInputStream = new ByteArrayInputStream(pngBytes);
         BufferedImage image;
         try {
@@ -90,10 +114,10 @@ public class WebAppBytes2PngService {
         } catch (IOException e) {
             throw new UnexpectedErrorException("Can't read image", e);
         }
-        return toBytes(image);
+        return toBytes(image, useGZIP);
     }
 
-    private static byte[] toBytes(BufferedImage image) {
+    private static byte[] toBytes(BufferedImage image, boolean useGZIP) {
         var width = image.getWidth();
         var height = image.getHeight();
         var byteOutputStream = new ByteArrayOutputStream(width * height * 3);
@@ -108,19 +132,36 @@ public class WebAppBytes2PngService {
         }
 
         var bytes = byteOutputStream.toByteArray();
+        if (useGZIP) {
+            bytes = readGZIP(bytes);
+        }
         return deserialize(bytes);
     }
 
     private static byte[] deserialize(byte[] bytes) {
-        var byteArrayInputStream = new ByteArrayInputStream(bytes);
-        try (var gzipInputStream = new GZIPInputStream(byteArrayInputStream);
-             var objectInputStream = new ObjectInputStream(gzipInputStream)) {
-            var length = objectInputStream.readInt();
+        try {
+            var length = Math.min(bytesToInt(bytes), bytes.length - 4);
             var buffer = new byte[length];
-            objectInputStream.readFully(buffer);
+            System.arraycopy(bytes, 4, buffer, 0, length);
             return buffer;
+        } catch (Exception e) {
+            throw new UnexpectedErrorException("Can't deserialize bytes", e);
+        }
+    }
+
+    private static byte[] readGZIP(byte[] bytes) {
+        var byteArrayInputStream = new ByteArrayInputStream(bytes);
+        try (var gzipInputStream = new GZIPInputStream(byteArrayInputStream)) {
+            return gzipInputStream.readAllBytes();
         } catch (IOException e) {
             throw new UnexpectedErrorException("Can't deserialize bytes", e);
         }
+    }
+
+    private static int bytesToInt(byte[] bytes) {
+        return ((bytes[0] & 0xFF) << 24) |
+                ((bytes[1] & 0xFF) << 16) |
+                ((bytes[2] & 0xFF) << 8) |
+                (bytes[3] & 0xFF);
     }
 }
