@@ -1,9 +1,25 @@
-export const fileToBase64 = (file: File, callback: (result: string) => void): void => {
-  const reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.onload = () => {
-    callback(reader.result as string);
-  };
+const maxFileSize = 1024 * 1024 * 256
+
+export const fileToBase64Stream = async (file: File): Promise<string> => {
+  if (file.size > maxFileSize) {
+    throw new Error(`File too big: ${file.size} > ${maxFileSize} bytes`)
+  }
+  const stream = file.stream();
+  const reader = stream.getReader();
+  const result = new Uint8Array(file.size);
+  let offset = 0
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    result.set(value, offset)
+    offset += value.length
+  }
+
+  return btoa(result.reduce(function (data, byte) {
+    return data + String.fromCharCode(byte);
+  }, ''));
 };
 
 export const base64ToFile = (base64: string, filename: string): void => {
